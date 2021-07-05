@@ -1,0 +1,51 @@
+{
+  'resource': '/testing',
+  'path': '/testing',
+  'httpMethod': 'GET',
+  'headers': None,
+  'multiValueHeaders': None,
+  'queryStringParameters': {
+    'sampleParam': 'value1'
+  },
+  'multiValueQueryStringParameters': {
+    'sampleParam': [
+      'value1'
+    ]
+  },
+  'pathParameters': None,
+  'stageVariables': None,
+  'requestContext': {
+    'resourceId': 'xuzxd5',
+    'resourcePath': '/testing',
+    'httpMethod': 'GET',
+    'extendedRequestId': 'AhH5cHmAoAMFS8Q=',
+    'requestTime': '06/Jun/2021:19:21:32 +0000',
+    'path': '/testing',
+    'accountId': '261044366975',
+    'protocol': 'HTTP/1.1',
+    'stage': 'test-invoke-stage',
+    'domainPrefix': 'testPrefix',
+    'requestTimeEpoch': 1623007292218,
+    'requestId': '77192faf-a6f1-4727-a825-e59492d66de8',
+    'identity': {
+      'cognitoIdentityPoolId': None,
+      'cognitoIdentityId': None,
+      'apiKey': 'test-invoke-api-key',
+      'principalOrgId': None,
+      'cognitoAuthenticationType': None,
+      'userArn': 'arn:aws:iam::261044366975:root',
+      'apiKeyId': 'test-invoke-api-key-id',
+      'userAgent': 'aws-internal/3 aws-sdk-java/1.11.1014 Linux/5.4.102-52.177.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/25.292-b10 java/1.8.0_292 vendor/Oracle_Corporation cfg/retry-mode/legacy',
+      'accountId': '261044366975',
+      'caller': '261044366975',
+      'sourceIp': 'test-invoke-source-ip',
+      'accessKey': 'ASIATZR3U5Z7WYTSIF35',
+      'cognitoAuthenticationProvider': None,
+      'user': '261044366975'
+    },
+    'domainName': 'testPrefix.testDomainName',
+    'apiId': 'qz8a0nzf5b'
+  },
+  'body': None,
+  'isBase64Encoded': False
+}

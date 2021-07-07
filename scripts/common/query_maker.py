@@ -2,7 +2,7 @@ def concat_filter_statements(filter_columns, filter_values, filter_conditions):
     filter_statement = "where "
     i = 0
     for column, condition, value in zip(filter_columns, filter_conditions, filter_values):
-        filter_statement = filter_statement + "\"{column}\" {condition} {value} "\
+        filter_statement = filter_statement + "{column} {condition} '{value}' "\
             .format(column=column, condition=condition, value=value)
         i = i + 1
         if i < len(filter_columns):

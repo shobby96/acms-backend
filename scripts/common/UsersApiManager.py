@@ -2,19 +2,20 @@ from scripts.common.base_api_manager import BaseAPIManager
 from scripts.common.query_maker import *
 from scripts.common import constants
 
-class OrganizationsApiManager(BaseAPIManager):
+class UsersApiManager(BaseAPIManager):
+
     def __init__(self, conn):
         BaseAPIManager.__init__(self, conn=conn)
 
-    @BaseAPIManager.route('/organizations', 'GET')
-    def get_organizations(self, schema="acmsSchema", table_name="organizations_v1", limit=10, querystring_parameters={}):
+    @BaseAPIManager.route('/users', 'GET')
+    def get_users(self, schema="acmsSchema", table_name="users_v1", limit=10, querystring_parameters={}):
         try:
 
             query = get_query_maker(schema=schema, table_name=table_name,
                                     limit=querystring_parameters.get('limit', 10),
                                     offset=querystring_parameters.get('offset', 0),
-                                    filter_columns=['organization_name'],
-                                    filter_values=[querystring_parameters.get('organization_name', 'SEPTEM SYSTEMS')],
+                                    filter_columns=['user_id'],
+                                    filter_values=[querystring_parameters.get('user_id', '1')],
                                     filter_conditions=['='])
 
             print('query: ', query)
@@ -24,8 +25,8 @@ class OrganizationsApiManager(BaseAPIManager):
             print('GetRequestsException: ', err)
             raise err
 
-    @BaseAPIManager.route('/organizations', 'POST')
-    def post_organizations(self, schema="acmsSchema", table_name="organizations_v1", request={}):
+    @BaseAPIManager.route('/users', 'POST')
+    def post_users(self, schema="acmsSchema", table_name="users_v1", request={}):
         try:
             # Sample Request
             request = request.get('body')
@@ -35,7 +36,7 @@ class OrganizationsApiManager(BaseAPIManager):
             # }
 
             # Checking if all the required keys exist in the request
-            required_columns = ["organization_name"]
+            required_columns = ["is_admin", 'first_name', 'last_name', 'organization_id']
 
             for column in required_columns:
                 if column not in request:
@@ -64,41 +65,4 @@ class OrganizationsApiManager(BaseAPIManager):
 
         except Exception as err:
             print('PostRequestException: ', err)
-            raise err
-
-
-
-    @BaseAPIManager.route('/organizations', 'PUT')
-    def put_organizations(self, schema='acmsSchema', table_name='organizations_v1', request={}):
-        try:
-            # Sample request
-            # request = {
-            #     'requestNumber': 1,
-            # }
-            request = request.get('body')
-
-            # Checking if all the desired keys in the request
-            required_columns = ['email']
-            for column in required_columns:
-                if column not in request:
-                    raise Exception(f'{column} value is required')
-
-            # Add Status to Request
-            # request['status'] = 1
-
-            # If values are strings, preserve quotations for query execution
-            for key in request:
-                if isinstance(request[key], str):
-                    request[key] = f"\'{request[key]}\'"
-
-            # Removing requestNumber from request to use it as a filter
-            organization_id = {'organization_id': request.pop('organization_id')}
-            print(f"organizationID: {organization_id}")
-            filter_conditions = ['=']
-            query = update_query_maker(schema_name=schema, table_name=table_name, request_body=request,
-                                       filter=organization_id, filter_conditions=filter_conditions)
-            print('acceptQuery: ', query)
-            execute_query(self._conn, query, is_fetch=0)
-        except Exception as err:
-            print('AcceptRequestException: ', err)
             raise err

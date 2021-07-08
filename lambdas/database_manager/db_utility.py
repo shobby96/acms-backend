@@ -4,6 +4,7 @@ import json
 
 from scripts.common.RequestApiManager import RequestsApiManager
 from scripts.common.OrganizationsApiManager import OrganizationsApiManager
+from scripts.common.UsersApiManager import UsersApiManager
 ENDPOINT = "acms-db-main.civ4fifo57x1.us-east-1.rds.amazonaws.com"
 PORT = "5432"
 USR = "postgres"
@@ -55,8 +56,26 @@ def lambda_handler(event, context):
         'multiValueHeaders': None,
         'queryStringParameters': {},
         'body': {
-            'organization_id': 1,
+            'organization_id': 2,
             'email': 'shabbysoft@gmail.com'
+        },
+        'multiValueQueryStringParameters': {
+
+        }
+    }
+
+    event = {
+        'resource': '/users',
+        'path': '/users',
+        'httpMethod': 'POST',
+        'headers': None,
+        'multiValueHeaders': None,
+        'queryStringParameters': {},
+        'body': {
+            'is_admin': 'true',
+            'first_name': 'Shahbakht Anwar',
+            'last_name': 'Anwar',
+            'organization_id': 1
         },
         'multiValueQueryStringParameters': {
 
@@ -72,7 +91,7 @@ def lambda_handler(event, context):
     request = {'queryStringParameters': query_string_parameters, 'body': body}
     route_key = f'method: {http_method}, path: {path}'
     conn = psycopg2.connect(host=ENDPOINT, port=PORT, database=DBNAME, user=USR, password='admin123')
-    requests_api_object = OrganizationsApiManager(conn)
+    requests_api_object = UsersApiManager(conn)
     endpoint_function = requests_api_object.route_table.get(route_key, None)
     print('endpoint function: ', endpoint_function)
     if endpoint_function:

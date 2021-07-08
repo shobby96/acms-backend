@@ -31,6 +31,38 @@ def lambda_handler(event, context):
         }
     }
 
+    event = {
+        'resource': '/requests',
+        'path': '/requests',
+        'httpMethod': 'POST',
+        'headers': None,
+        'multiValueHeaders': None,
+        'queryStringParameters': {},
+        'body': {
+            'organization_name': 'Shabby soft',
+            'email': 'shabbysoft@gmail.com'
+        },
+        'multiValueQueryStringParameters': {
+
+        }
+    }
+
+    event = {
+        'resource': '/organizations',
+        'path': '/organizations',
+        'httpMethod': 'PUT',
+        'headers': None,
+        'multiValueHeaders': None,
+        'queryStringParameters': {},
+        'body': {
+            'organization_id': 1,
+            'email': 'shabbysoft@gmail.com'
+        },
+        'multiValueQueryStringParameters': {
+
+        }
+    }
+
     # Parse query string parameters to make a route_key for locating function
     path = event['path']
     http_method = event['httpMethod']
@@ -45,7 +77,7 @@ def lambda_handler(event, context):
     print('endpoint function: ', endpoint_function)
     if endpoint_function:
         method_to_call = getattr(requests_api_object, endpoint_function)
-        method_to_call(querystring_parameters=processed_query_string_parameters)
+        method_to_call(request=event)
 
 
     # conn = psycopg2.connect(host=ENDPOINT, port=PORT, database=DBNAME, user=USR, password='admin123')

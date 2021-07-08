@@ -11,3 +11,9 @@ accept_request_arg_types = {'requestNumber': int}
 
 cancel_request_arg_types = {'requestNumber': int,
                             'cancellationReason': str}
+
+
+post_organization_arg_types = {
+        'organization_name': str,
+        'email': str,
+}

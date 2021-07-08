@@ -7,7 +7,7 @@ class OrganizationsApiManager(BaseAPIManager):
         BaseAPIManager.__init__(self, conn=conn)
 
     @BaseAPIManager.route('/organizations', 'GET')
-    def get_requests(self, schema="acmsSchema", table_name="organizations_v1", limit=10, querystring_parameters={}):
+    def get_organizations(self, schema="acmsSchema", table_name="organizations_v1", limit=10, querystring_parameters={}):
         try:
 
             query = get_query_maker(schema=schema, table_name=table_name,
@@ -24,14 +24,15 @@ class OrganizationsApiManager(BaseAPIManager):
             print('GetRequestsException: ', err)
             raise err
 
-    @BaseAPIManager.route('/requests', 'POST')
-    def post_request(self, schema="acmsSchema", table_name="requests", request={}):
+    @BaseAPIManager.route('/organizations', 'POST')
+    def post_organizations(self, schema="acmsSchema", table_name="organizations_v1", request={}):
         try:
             # Sample Request
-            request = {
-                "organization_name": 2,
-                "email": 'family',
-            }
+            request = request.get('body')
+            # request = {
+            #     "organization_name": 2,
+            #     "email": 'family',
+            # }
 
             # Checking if all the required keys exist in the request
             required_columns = ["organization_name"]
@@ -41,7 +42,7 @@ class OrganizationsApiManager(BaseAPIManager):
                     raise Exception(f'{column} value is required')
 
             # Checking if all the values for keys are of the desired type
-            request_type_check(request, constants.post_request_arg_types)
+            request_type_check(request, constants.post_organization_arg_types)
 
             # If values are strings, preserve quotations for query execution
             for key in request:
@@ -49,8 +50,8 @@ class OrganizationsApiManager(BaseAPIManager):
                     request[key] = f"\'{request[key]}\'"
 
             # Format date and time according to standard
-            request['date'] = f"TO_DATE({request['date']}, 'YYYYMMDD')"
-            request['timeOfArrival'] = f"TO_TIMESTAMP({request['timeOfArrival']},'HH:MI:SS')"
+            # request['date'] = f"TO_DATE({request['date']}, 'YYYYMMDD')"
+            # request['timeOfArrival'] = f"TO_TIMESTAMP({request['timeOfArrival']},'HH:MI:SS')"
 
             # Make query for execution
             column_names = request.keys()
@@ -63,4 +64,40 @@ class OrganizationsApiManager(BaseAPIManager):
 
         except Exception as err:
             print('PostRequestException: ', err)
+            raise err
+
+
+
+    @BaseAPIManager.route('/organizations', 'PUT')
+    def put_organizations(self, schema='acmsSchema', table_name='organizations_v1', request={}):
+        try:
+            # Sample request
+            # request = {
+            #     'requestNumber': 1,
+            # }
+            request = request.get('body')
+
+            # Checking if all the desired keys in the request
+            required_columns = ['email']
+            for column in required_columns:
+                if column not in request:
+                    raise Exception(f'{column} value is required')
+
+            # Add Status to Request
+            # request['status'] = 1
+
+            # If values are strings, preserve quotations for query execution
+            for key in request:
+                if isinstance(request[key], str):
+                    request[key] = f"\'{request[key]}\'"
+
+            # Removing requestNumber from request to use it as a filter
+            request_number = {'organization_id': request.pop('organization_id')}
+            filter_conditions = ['=']
+            query = update_query_maker(schema_name=schema, table_name=table_name, request_body=request,
+                                       filter=request_number, filter_conditions=filter_conditions)
+            print('acceptQuery: ', query)
+            execute_query(self._conn, query, is_fetch=0)
+        except Exception as err:
+            print('AcceptRequestException: ', err)
             raise err

@@ -29,7 +29,7 @@ def concat_headers_or_values(columns=[], is_header=1):
     column_string = ''
     i = 0
     for column in columns:
-        column_string = column_string + (f"\"{column}\", " if is_header else f"{column}, ")
+        column_string = column_string + (f"{column}, " if is_header else f"{column}, ")
         i = i + 1
         if i >= len(columns):
             column_string = column_string[:-2]
@@ -92,7 +92,7 @@ def concat_column_and_values(columns=[], values=[]):
     concat_string = ""
     i = 0
     for (column, value) in zip(columns, values):
-        concat_string = concat_string + f'\"{column}\" = {value}'
+        concat_string = concat_string + f'{column} = {value}'
         i = i + 1
         if i < len(columns):
             concat_string = concat_string + ','

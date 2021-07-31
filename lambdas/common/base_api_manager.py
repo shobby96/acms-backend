@@ -26,7 +26,8 @@ class BaseAPIManager(object):
 
             def wrapper(*args, **kwargs):
                 print("start")
-                func(*args, **kwargs)
+                # func(*args, **kwargs)
+                return func(*args, **kwargs)
                 print("end")
             return wrapper
         return decorator

@@ -1,3 +1,6 @@
+import json
+import datetime
+
 def concat_filter_statements(filter_columns, filter_values, filter_conditions):
     filter_statement = "where "
     i = 0
@@ -48,36 +51,52 @@ def get_query_maker(schema="", table_name="", filter_columns=[], filter_values=[
     return query
 
 
-def insert_query_maker(schema_name="", table_name="", columns=None, values=None):
+def insert_query_maker(schema_name="", table_name="", columns=None, values=None, return_column_name=None):
 
     if values is None:
         values = []
     if columns is None:
         columns = []
+
     column_names = ["userID", "invitationTo", "reason", "status", "date"]
     print(concat_headers_or_values(column_names))
     column_string = concat_headers_or_values(columns)
     values = concat_headers_or_values(values, is_header=0)
+    return_column = f'RETURNING {return_column_name}'
+    if not return_column_name:
+        return_column = ''
     insert_query = """INSERT INTO \"{schema_name}\".{table_name}
                         ({column_string})
-                        VALUES ({values});
+                        VALUES ({values})
+                        {return_column};
                         """.format(schema_name=schema_name, table_name=table_name, column_string=column_string,
-                                   values=values)
+                                   values=values, return_column=return_column)
 
     return insert_query
 
 
-def execute_query(connection, query, limit=10, is_fetch=1):
-    cur = connection.cursor()
-    cur.execute(query)
-    if is_fetch:
-        query_results = cur.fetchmany(size=limit)
-        print(query_results)
-        return query_results
-    cur.close()
-    connection.commit()
-    connection.close()
 
+
+def execute_query(connection, query, limit=10, is_fetch=1, autocommit=1, column_names=[]):
+    try:
+        cur = connection.cursor()
+        cur.execute(query)
+        if is_fetch:
+            query_results = cur.fetchmany(size=limit)
+            print('query_results: ', query_results, 'column_names: ', column_names)
+            if column_names:
+                query_results = result_list_to_object(column_names=column_names, data_rows=query_results)
+            connection.commit()
+            connection.close
+            return query_results
+        cur.close()
+        if autocommit:
+            connection.commit()
+        connection.close()
+    except Exception as e:
+        print(f'Execute Query Exception: {e}')
+        connection.rollback()
+        connection.close()
 
 def request_type_check(request_body=None, arg_types=None):
     if request_body is None:
@@ -115,3 +134,56 @@ def update_query_maker(schema_name='', table_name='', request_body=None, filter=
                        "\n" if filter_columns else ""
     query = update_statement + set_statement + filter_statement
     return query
+
+
+def parse_querystring_parameters(querystring_parameters={}):
+    for param in querystring_parameters:
+        print('qrm: ', querystring_parameters[param], ' param: ', param)
+        if querystring_parameters[param] and len(querystring_parameters[param]) == 1:
+            querystring_parameters[param] = querystring_parameters[param][0]
+    if 'limit' not in querystring_parameters:
+        querystring_parameters['limit'] = 10
+    if 'offset' not in querystring_parameters:
+        querystring_parameters['offset'] = 0
+    print('parameters query string: ', querystring_parameters)
+
+    return querystring_parameters
+
+
+def datetime_handler(x):
+    if isinstance(x, datetime.datetime):
+        return x.isoformat()
+    raise TypeError("Unknown type")
+
+def create_http_response_object(returnDataObject={}, headers={}, status_code=200):
+    # Create Http request
+    http_object = {}
+    http_object['statusCode'] = status_code
+    http_object['headers'] = headers
+    http_object['headers']['Content-type'] = 'application/json'
+    http_object['headers'] = {"Access-Control-Allow-Origin": "*"}
+    if returnDataObject:
+        http_object['body'] = json.dumps(returnDataObject, default=str)
+    return http_object
+
+
+def result_list_to_object(data_rows=[], column_names=[]):
+    try:
+        body_object = {}
+        data_rows_with_tags = []
+        for row in data_rows:
+            print('row: ', row)
+            if len(row) == len(column_names):
+                for column_name, value in zip(column_names, row):
+                    body_object[column_name] = value
+            data_rows_with_tags.append(body_object)
+        print(f'data_row_with_tags: {data_rows_with_tags}')
+        return data_rows_with_tags
+    except Exception as err:
+        print(f'Exception in converting object to list: {err}')
+
+
+def object_contains(required_columns=[], object={}):
+    for column in required_columns:
+        if column not in object:
+            raise Exception(f'{column} value is required')

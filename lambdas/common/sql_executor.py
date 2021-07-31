@@ -19,7 +19,7 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.append(os.path.abspath('.'))
+sys.path.append(os.path.abspath(''))
 
 from lambdas.database_manager.db_utility import DbUtility
 from lambdas.database_manager.db_utility import session_decorator

@@ -2,14 +2,27 @@ from lambdas.common import constants
 from lambdas.common.base_api_manager import BaseAPIManager
 from lambdas.common.query_maker import *
 
+import jwt
 
+
+def get_id_from_headers(event):
+    try:
+        headers = event.get('headers')
+        if headers:
+            id_token = headers.get('Authorization')
+            if id_token:
+                user_id = jwt.decode(id_token, options={"verify_signature": False}).get("custom:id")
+                return user_id
+            raise Exception(f'idToken value is required')
+    except Exception as err:
+        print('id_from_headers: ', err)
 
 class RequestsApiManager(BaseAPIManager):
 
     def __init__(self, conn):
         BaseAPIManager.__init__(self, conn=conn)
 
-    @BaseAPIManager.route('/requests/admin', 'GET')
+    @BaseAPIManager.route('/request/admin', 'GET')
     def get_requests_admin(self, schema="acmsSchema", table_name="requests_v1", limit=10, event={}):
         try:
             query_string_parameters = event.get('multiValueQueryStringParameters', {})
@@ -23,9 +36,10 @@ class RequestsApiManager(BaseAPIManager):
             query = get_query_maker(schema=schema, table_name=table_name,
                                     limit=query_string_parameters.get('limit', 10),
                                     offset=query_string_parameters.get('offset', 0),
-                                    filter_columns=['organization_id'],
-                                    filter_values=[query_string_parameters.get('organization_id', 1)],
-                                    filter_conditions=['='])
+                                    filter_columns=['organization_id', 'status'],
+                                    filter_values=[query_string_parameters.get('organization_id', 1),
+                                                   query_string_parameters.get('status', 0)],
+                                    filter_conditions=['=', '='])
             print('getQueryMaker: ', query)
             results = execute_query(self._conn, query, limit, is_fetch=1)
             return results
@@ -33,24 +47,23 @@ class RequestsApiManager(BaseAPIManager):
             print('GetRequestsException: ', err)
             raise err
 
-
-    @BaseAPIManager.route('/requests', 'GET')
+    @BaseAPIManager.route('/request', 'GET')
     def get_requests(self, schema="acmsSchema", table_name="requests_v1", limit=10, event={}):
         try:
+            print('event in get_requests: ', event)
             query_string_parameters = event.get('multiValueQueryStringParameters', {})
+            print('qrs1: ', query_string_parameters)
             query_string_parameters = parse_querystring_parameters(query_string_parameters)
+            print('qrs2: ', query_string_parameters)
             # Checking if all the required keys exist in the request
-            required_columns = ["user_id"]
-
-            for column in required_columns:
-                if column not in query_string_parameters:
-                    raise Exception(f'{column} value is required')
+            id = get_id_from_headers(event)
+            print('gettingquery: ')
             query = get_query_maker(schema=schema, table_name=table_name,
                                     limit=query_string_parameters.get('limit', 10),
                                     offset=query_string_parameters.get('offset', 0),
-                                    filter_columns=['user_id'],
-                                    filter_values=[query_string_parameters.get('user_id', 1)],
-                                    filter_conditions=['='])
+                                    filter_columns=['user_id', 'status'],
+                                    filter_values=[id, query_string_parameters.get('status', 0)],
+                                    filter_conditions=['=', '='])
             print('getQueryMaker: ', query)
             results = execute_query(self._conn, query, limit, is_fetch=1,
                                     column_names=list(constants.request_arg_types.keys()))
@@ -61,14 +74,14 @@ class RequestsApiManager(BaseAPIManager):
             raise err
 
 
-    @BaseAPIManager.route('/requests', 'POST')
+    @BaseAPIManager.route('/request', 'POST')
     def post_request(self, schema="acmsSchema", table_name="requests_v1", event={}):
         try:
 
             request = event.get('body')
-
+            id = get_id_from_headers(event)
             # Checking if all the required keys exist in the request
-            required_columns = ["user_id", "invitation_to", 'reason', 'status', 'invitation_date',
+            required_columns = ["invitation_to", 'reason', 'status', 'invitation_date',
                                 "invite_time"]
 
             for column in required_columns:
@@ -84,7 +97,7 @@ class RequestsApiManager(BaseAPIManager):
                     request[key] = f"\'{request[key]}\'"
 
             # Get Organization ID for User
-            user_id = request.get('user_id')
+            user_id = id
             get_organization_id_query = """
                                         SELECT l.organization_id
                                         FROM \"{schema}\".organizations_users_link l
@@ -123,7 +136,7 @@ class RequestsApiManager(BaseAPIManager):
             print('PostRequestException: ', err)
             raise err
 
-    @BaseAPIManager.route('/requests/accept', 'PUT')
+    @BaseAPIManager.route('/request/accept', 'PUT')
     def accept_request(self, schema='acmsSchema', table_name='requests_v1', event={}):
         try:
             request = event.get('body')
@@ -154,7 +167,7 @@ class RequestsApiManager(BaseAPIManager):
             print('AcceptRequestException: ', err)
             raise err
 
-    @BaseAPIManager.route('/requests/cancel', 'PUT')
+    @BaseAPIManager.route('/request/cancel', 'PUT')
     def cancel_request(self, schema='acmsSchema', table_name='requests_v1', event={}):
         try:
             request = event.get('body')

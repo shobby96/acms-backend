@@ -2,6 +2,8 @@ from lambdas.common.base_api_manager import BaseAPIManager
 from lambdas.common.query_maker import *
 from lambdas.common import constants
 import boto3
+import copy
+from lambdas.common.UsersApiManager import UsersApiManager
 
 AuthFlow = 'USER_PASSWORD_AUTH'
 ClientId = '338hugd3tjgu3jepna5puq6hj'
@@ -146,7 +148,7 @@ class OrganizationsApiManager(BaseAPIManager):
                 if isinstance(request[key], str):
                     request[key] = f"\'{request[key]}\'"
 
-            # Removing requestNumber from request to use it as a filter
+            # Removing organizationID from request to use it as a filter
             organization_id = {'organization_id': request.pop('organization_id')}
             print(f"organizationID: {organization_id}")
             filter_conditions = ['=']
@@ -159,3 +161,119 @@ class OrganizationsApiManager(BaseAPIManager):
         except Exception as err:
             print('AcceptRequestException: ', err)
             raise err
+
+    @BaseAPIManager.route('/organizations/addMember', 'POST')
+    def post_member(self, schema='acmsSchema', table_name='organizations_v1', event={}):
+        try:
+            # Sample request
+            # request = {
+            #     'requestNumber': 1,
+            # }
+            request = event.get('body')
+
+            # Checking if all the desired keys in the request
+            required_columns = ['email', 'organization_id']
+            for column in required_columns:
+                if column not in request:
+                    raise Exception(f'{column} value is required')
+
+            # Add Status to Request
+            # request['status'] = 1
+
+            # If values are strings, preserve quotations for query execution
+            # for key in request:
+            #     if isinstance(request[key], str):
+            #         request[key] = f"\'{request[key]}\'"
+
+            # Removing organizationID from request to use it as a filter
+            organization_id = request.pop('organization_id')
+            email_addr = request.get('email')
+            print(f"organizationID: {str(organization_id)}")
+            print(f"email: {email_addr}")
+            response = client.admin_create_user(
+                UserPoolId='us-east-1_r1N8TLqjq',
+                # ClientId=ClientId,
+                Username=str(email_addr),
+                UserAttributes=[
+                    {
+                        'Name': 'email',
+                        'Value': str(email_addr)
+                    },
+                    {
+                        "Name": "custom:organizationID",
+                        "Value": str(organization_id)
+                    }
+                ],
+                DesiredDeliveryMediums=[
+                    'EMAIL',
+                ],
+
+            )
+            print(f"response: {response}")
+            # filter_conditions = ['=']
+            # query = update_query_maker(schema_name=schema, table_name=table_name, request_body=request,
+            #                            filter=organization_id, filter_conditions=filter_conditions)
+            # print('acceptQuery: ', query)
+            # results = execute_query(self._conn, query, is_fetch=0)
+            # http_response_object = create_http_response_object(returnDataObject=results)
+            # return http_response_object
+        except Exception as err:
+            print('AcceptRequestException: ', err)
+            raise err
+
+    @BaseAPIManager.route('/organizations/confirmMember', 'POST')
+    def confirmMember(self, schema='acmsSchema', table_name='organizations_v1', event={}):
+        try:
+            print('schema: ', schema)
+
+            request = event.get('body')
+
+            # Checking if all the desired keys in the request
+            required_columns = ['session', 'first_name', 'last_name']
+            for column in required_columns:
+                if column not in request:
+                    raise Exception(f'{column} value is required')
+
+
+            response = client.respond_to_auth_challenge(
+                ClientId=ClientId,
+                ChallengeName='NEW_PASSWORD_REQUIRED',
+                Session=request.get('session'),
+                ChallengeResponses={
+                    'NEW_PASSWORD': request.get('password'),
+                    'USERNAME': request.get('email')
+                },
+            )
+
+            event_copy = copy.deepcopy(event)
+            user_manager = UsersApiManager(conn=self._conn)
+            user_id = user_manager.post_users(event=event_copy)
+            if user_id:
+                user_id = user_id[0][0]
+                response = client.admin_update_user_attributes(
+                    UserPoolId='us-east-1_r1N8TLqjq',
+                    Username=request.get('email'),
+                    UserAttributes=[
+                        {
+                            'Name': 'email',
+                            'Value': request.get('email'),
+                        },
+                        {
+                            "Name": "custom:firstName",
+                            "Value": request.get('first_name')
+                        },
+                        {
+                            "Name": "custom:lastName",
+                            "Value": request.get('last_name')
+                        },
+                        {
+                            "Name": "custom:id",
+                            "Value": str(user_id)
+                        },
+
+                    ]
+                )
+                print(f"response: {response}")
+
+        except Exception as err:
+            print('ConfirmMemberException: ', err)

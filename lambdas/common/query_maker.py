@@ -41,6 +41,7 @@ def concat_headers_or_values(columns=[], is_header=1):
 
 def get_query_maker(schema="", table_name="", filter_columns=[], filter_values=[], filter_conditions=[],
                     limit=10, offset=0, sort_columns=[], order=[]):
+    print('limit: ', limit, 'offset: ', offset)
     select_statement = "select * from \"{schema}\".{table_name} \n".format(schema=schema, table_name=table_name)
     filter_statement = concat_filter_statements(filter_columns, filter_values, filter_conditions) + \
                        "\n" if filter_columns else ""
@@ -97,6 +98,7 @@ def execute_query(connection, query, limit=10, is_fetch=1, autocommit=1, column_
         print(f'Execute Query Exception: {e}')
         connection.rollback()
         connection.close()
+        raise e
 
 def request_type_check(request_body=None, arg_types=None):
     if request_body is None:
@@ -169,18 +171,20 @@ def create_http_response_object(returnDataObject={}, headers={}, status_code=200
 
 def result_list_to_object(data_rows=[], column_names=[]):
     try:
-        body_object = {}
+
         data_rows_with_tags = []
         for row in data_rows:
             print('row: ', row)
+            body_object = {}
             if len(row) == len(column_names):
                 for column_name, value in zip(column_names, row):
                     body_object[column_name] = value
-            data_rows_with_tags.append(body_object)
+                data_rows_with_tags.append(body_object)
         print(f'data_row_with_tags: {data_rows_with_tags}')
         return data_rows_with_tags
     except Exception as err:
         print(f'Exception in converting object to list: {err}')
+        raise err
 
 
 def object_contains(required_columns=[], object={}):

@@ -2,7 +2,7 @@ from lambdas.common.base_api_manager import BaseAPIManager
 from lambdas.common.query_maker import *
 from lambdas.common.UsersApiManager import UsersApiManager
 import boto3
-import copy;
+import copy
 
 AuthFlow = 'USER_PASSWORD_AUTH'
 ClientId = '338hugd3tjgu3jepna5puq6hj'
@@ -34,14 +34,23 @@ class AuthenticationApiManager(BaseAPIManager):
                 ClientId=ClientId
             )
 
-            if auth_result['AuthenticationResult']:
-                user_profile = {}
-                user_profile['authenticationToken'] = auth_result.get('AuthenticationResult',{})
-                user_profile['profile'] = client.get_user(AccessToken=auth_result['AuthenticationResult']['AccessToken'])
+            print(f"auth_result: {auth_result}")
+
+            if auth_result.get('AuthenticationResult'):
+
+                user_profile = {'authenticationToken': auth_result.get('AuthenticationResult', {}),
+                                'profile': client.get_user(
+                                    AccessToken=auth_result['AuthenticationResult']['AccessToken'])}
                 user_profile['profile'].pop('ResponseMetadata')
                 print(f'UserProfile: {user_profile}')
                 http_response_object = create_http_response_object(user_profile)
                 print('response_object_auth: ', http_response_object)
+                return http_response_object
+            if auth_result.get('ChallengeName') and auth_result['ChallengeName'] == 'NEW_PASSWORD_REQUIRED':
+                print('Inside <<<<<<<<<')
+                new_signup_details = {'Session': auth_result.get('Session'),
+                                      'ChallengeParameters': auth_result.get('ChallengeParameters')}
+                http_response_object = create_http_response_object(new_signup_details)
                 return http_response_object
 
             http_response_object = create_http_response_object({'message': 'User confirmed successfully!'})
@@ -101,7 +110,7 @@ class AuthenticationApiManager(BaseAPIManager):
                 return http_response_object
         except Exception as err:
             print('signupRequestException: ', err)
-            raise
+            raise err
 
 
     @BaseAPIManager.route('/confirm', 'POST')
